@@ -1,0 +1,20 @@
+.BorderPane {
+    -fx-background-color: #2C2F33;
+}
+
+.Canvas {
+    -fx-background-color: #2C2F33;
+}
+
+.Button {
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #7289da;
+}
+
+#imageWriteInfoTextArea {
+    -fx-text-fill: #ffffff;
+}
+
+#imageWriteInfoTextArea .content {
+    -fx-background-color: #99AAB5;
+}
