@@ -21,9 +21,13 @@ public class App extends Application {
     public void start(Stage stage) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("fxml/main-layout.fxml"));
-            stage.setScene(new Scene( (Parent) loader.load(), 1920, 1008));
+            stage.setScene(new Scene( (Parent) loader.load(), 1200, 900));
             ((MainController)loader.getController()).setStage(stage);
+            ((MainController)loader.getController()).setScene();
+            ((MainController)loader.getController()).setKeyEventHandler();
+
             stage.setTitle("NinaVSI");
+            // Visual Simulation Inference
             stage.show();
         } catch (IOException e) {
             e.printStackTrace();

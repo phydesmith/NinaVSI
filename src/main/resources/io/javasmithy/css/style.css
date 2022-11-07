@@ -11,6 +11,10 @@
     -fx-background-color: #7289da;
 }
 
+.Label {
+    -fx-text-fill: #ffffff;
+}
+
 #imageWriteInfoTextArea {
     -fx-text-fill: #ffffff;
 }
