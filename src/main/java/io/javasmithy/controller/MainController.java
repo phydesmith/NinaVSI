@@ -4,6 +4,7 @@ import io.javasmithy.inference.DetectionClass;
 import io.javasmithy.inference.Inference;
 import io.javasmithy.inference.Model;
 import io.javasmithy.robot.MovementTask;
+import io.javasmithy.robot.TurnTask;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -21,6 +22,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import javax.imageio.ImageIO;
@@ -36,6 +39,10 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MainController implements Initializable {
     private final float MAX_X_THRESHOLD = 640/3 * 2;
@@ -43,12 +50,18 @@ public class MainController implements Initializable {
     private final float MAX_Y_THRESHOLD = 640;
     private final float MIN_Y_THRESHOLD = 640/3;
     private final long HALF_SECOND_INTERVAL = 500_000_000L;
+    private final float QUARTER_CANVAS_AREA = 102400;
+    private final float THIRD_CANVAS_AREA = 136320;
+    private final float SEVEN_TWENTY_FOURTHS_CANVAS_AREA = 119466;
     private final long ONE_SECOND_INTERVAL = 1_000_000_000L;
     private final long FIVE_SECOND_INTERVAL = 5_000_000_000L;
     private final long TEN_SECOND_INTERVAL = 10_000_000_000L;
     private final long TWELVE_FPS_INTERVAL = 83_333_333L;
     private final long SIXTY_FPS_INTERVAL = 16_666_666L;
     private final long ONE_TWENTY_FPS_INTERVAL = 8_333_333L;
+
+    private final ExecutorService MOVEMENT_THREAD_POOL = Executors.newFixedThreadPool(1);
+    private final ExecutorService INFERENCE_THREAD_POOL = Executors.newFixedThreadPool(1);
 
     private final double MIN_CANVAS_COORD = 0;
     private final double MAX_CANVAS_COORD = 640;
@@ -66,8 +79,12 @@ public class MainController implements Initializable {
     private Stage stage;
     private Model model;
     private Random random;
-    private AnimationTimer animationTimer, moveTimer;
-    private boolean capturing, moving;
+    private AnimationTimer animationTimer, moveTimer, avoidTimer;
+    private boolean capturing, avoiding, modelLoaded;
+    private boolean moving, screenActive = false;
+
+    private double rightThresholdOverlap, leftThresholdOverlap;
+
     private StringBuilder sb;
     private Robot robot;
     private Inference inference;
@@ -77,10 +94,12 @@ public class MainController implements Initializable {
     float[] results;
     int[] rectDimensions;
 
+    Future isAvoiding;
+
     @FXML
     Canvas canvas;
     @FXML
-    MenuItem exitMenuItem, toggleConCap, capFrameMenuItem;
+    MenuItem exitMenuItem, toggleConCap, captureMenuItem;
     @FXML
     TextArea logArea;
     @FXML
@@ -123,8 +142,14 @@ public class MainController implements Initializable {
 
                 if (event.isControlDown() && event.getCode() == KeyCode.M ) {
                     log("Toggling Movement via Hotkey");
-                    toggleMovement();
-                    //moving = (moving) ? false : true;
+                    //toggleMovement();
+
+                    if (moving){
+                        stopMovement();
+                    } else {
+                        startMovement();
+                    }
+
                 }
             }
         });
@@ -143,7 +168,11 @@ public class MainController implements Initializable {
 
     @FXML
     public void setMovementPulse(){
-        this.movementPulseInterval = Integer.parseInt(this.movementPulseTextField.getText());
+        try {
+            this.movementPulseInterval = Integer.parseInt(this.movementPulseTextField.getText());
+        } catch (Exception e){
+            log("Invalid data type. Enter in a whole number for movement pulse.");
+        }
     }
 
     @FXML
@@ -155,7 +184,7 @@ public class MainController implements Initializable {
         try {
             File captureFile = new File("capture.jpeg");
             ImageIO.write(this.currentBufferedImage, "jpeg", captureFile);
-            log("Wrote file.");
+            log("Wrote image file.");
         } catch (IOException e) {
             log("Did not write file.");
         }
@@ -163,7 +192,7 @@ public class MainController implements Initializable {
         System.out.println("ImageIO TIME: " + (imageIOTimeEnd-imageIOTimeStart));
 
         this.currentImage = (Image) SwingFXUtils.toFXImage( this.currentBufferedImage, null);
-        log("Drawing capture.");
+        log("Drawing image capture.");
         drawCapture();
 
 
@@ -239,6 +268,47 @@ public class MainController implements Initializable {
                             log("Capturing single image.");
                             captureSingleImage(true);
                             fps = now;
+
+                            //  Detecting and toggling movement if collision detected
+                            if(checkInferencesForCollisions()) {
+                                if(moving){
+                                    log("Collision detected while moving, toggling movement to off.");
+                                    log("BEFORE STOP: " + moving);
+                                    stopMovement();
+                                    log("DEBUG AFTER STOP: " + moving);
+                                    log("Avoiding on left.");
+                                    log("AVOIDING STATUS: " + avoiding);
+                                    if (!avoiding){
+
+                                        // left threshold
+                                        double left = (leftThresholdOverlap > 0) ? Math.abs(leftThresholdOverlap) : 0;
+                                        double right = (rightThresholdOverlap < 0) ? Math.abs(rightThresholdOverlap) : 0;
+
+                                        if (left > right){
+                                            log("Avoiding on right as left(" + left + ") > right(" + right+")");
+                                            avoidOnRight();
+                                            //avoidOnLeft();
+                                        } else if (right >left){
+                                            log("Avoiding on left as right(" + right + ") > left(" +right+")");
+                                            avoidOnLeft();
+                                        } else {
+                                            log("Avoiding randomly as neither overlaps.");
+                                            int leftRight = random.nextInt(100);
+                                            if(leftRight%2==0){
+                                                avoidOnLeft();
+                                            } else {
+                                                avoidOnRight();
+                                            }
+                                        }
+
+
+                                    }
+                                    log("AVOIDING STATUS: " + avoiding);
+                                    log("BEFORE START: " + moving);
+                                    startMovement();
+                                    log("AFTER START: " + moving);
+                                }
+                            }
                         } else {
                             captureSingleImage(false);
                         }
@@ -268,9 +338,58 @@ public class MainController implements Initializable {
         }
     }
 
+    private boolean checkInferencesForCollisions(){
+        boolean collisionDetected = false;
+        int inferencesLength = this.inference.getDetectionClass().length;
+        log("Checking collisions.");
+        for (int i = 0; i < inferencesLength; i++){
+            float xMinDetection = this.inference.getxMin()[i];
+            float yMinDetection = this.inference.getyMin()[i];
+            float xMaxDetection = this.inference.getxMax()[i];
+            float yMaxDetection = this.inference.getyMax()[i];
+
+            float height = yMaxDetection-yMinDetection;
+            float width = xMaxDetection-xMinDetection;
+            float area = height*width;
+            if (area < SEVEN_TWENTY_FOURTHS_CANVAS_AREA) {
+                //  upper left corner
+                if ((xMinDetection > X_MIN_AVOIDANCE_THRESHOLD && xMinDetection < X_MAX_AVOIDANCE_THRESHOLD) &&
+                        (yMinDetection > Y_MIN_AVOIDANCE_THRESHOLD && yMinDetection < Y_MAX_AVOIDANCE_THRESHOLD))collisionDetected = true;
+
+                //  lower left corner
+                if ((xMinDetection > X_MIN_AVOIDANCE_THRESHOLD && xMinDetection < X_MAX_AVOIDANCE_THRESHOLD) &&
+                        (yMaxDetection > Y_MIN_AVOIDANCE_THRESHOLD && yMaxDetection < Y_MAX_AVOIDANCE_THRESHOLD))collisionDetected = true;
+
+                //  upper right corner
+                if (( xMaxDetection > X_MIN_AVOIDANCE_THRESHOLD && xMaxDetection < X_MAX_AVOIDANCE_THRESHOLD ) &&
+                        (yMinDetection > Y_MIN_AVOIDANCE_THRESHOLD && yMinDetection < Y_MAX_AVOIDANCE_THRESHOLD)) collisionDetected = true;
+
+                //  lower right corner
+                if ((xMaxDetection > X_MIN_AVOIDANCE_THRESHOLD && xMaxDetection < X_MAX_AVOIDANCE_THRESHOLD) &&
+                        (yMaxDetection > Y_MIN_AVOIDANCE_THRESHOLD && yMaxDetection < Y_MAX_AVOIDANCE_THRESHOLD)) collisionDetected = true;
+
+                //  break if detection
+                if(collisionDetected) {
+                    //  we care about this being positive
+                    this.leftThresholdOverlap = X_MIN_AVOIDANCE_THRESHOLD - xMinDetection;
+
+                    //  we care about this being negative
+                    this.rightThresholdOverlap = X_MAX_AVOIDANCE_THRESHOLD - xMaxDetection;
+                    break;
+                }
+            } else {
+                log("Detection ignored, greater than a quarter of canvas.");
+            }
+        }
+        log("Collision status: " + collisionDetected);
+        return collisionDetected;
+    }
+
     @FXML
     private void toggleMovement() {
-        activateScreen();
+        if (!this.screenActive){
+            activateScreen();
+        }
         if (this.moveTimer == null) {
             this.moveTimer = new AnimationTimer() {
                 private long lastToggle;
@@ -278,8 +397,6 @@ public class MainController implements Initializable {
 
                 @Override
                 public void handle(long now) {
-
-
                     if (fps == 0L) {
                         fps = now;
                     } else {
@@ -287,20 +404,15 @@ public class MainController implements Initializable {
                         if (diff >= ONE_SECOND_INTERVAL ) {
                             log("Moving forward.");
                             long callStart = System.nanoTime();
-                            MovementTask mTask = new MovementTask(movementPulseInterval);
-                            mTask.run();
+                            if (isAvoiding == null || isAvoiding.isDone()){
+
+                                MOVEMENT_THREAD_POOL.submit(new MovementTask(movementPulseInterval));
+                            }
                             long callEnd = System.nanoTime();
                             System.out.println("Time to move: " + (callEnd-callStart));
-
-                            //robot.keyPress(java.awt.event.KeyEvent.VK_W);
-                            //robot.delay(movementPulseInterval);
-                            //robot.keyRelease(java.awt.event.KeyEvent.VK_W);
                             fps = now;
                         }
                     }
-
-
-
                 }
             };
         }
@@ -314,6 +426,78 @@ public class MainController implements Initializable {
             log("Starting movement.");
             this.moveTimer.start();
         }
+    }
+
+    public void startMovement(){
+        if (!screenActive){
+            activateScreen();
+        }
+        if (this.moveTimer == null) initializeMoveTimer();
+        this.moveTimer.start();
+        this.moving = true;
+    }
+    public void stopMovement(){
+        if (!screenActive){
+            activateScreen();
+        }
+        if (this.moveTimer == null) initializeMoveTimer();
+        this.moveTimer.stop();
+        this.moving=false;
+    }
+    private void initializeMoveTimer(){
+        this.moveTimer = new AnimationTimer() {
+            private long lastToggle;
+            private long fps;
+
+            @Override
+            public void handle(long now) {
+                if (fps == 0L) {
+                    fps = now;
+                } else {
+                    long diff = now - fps;
+                    if (diff >= ONE_SECOND_INTERVAL ) {
+                        log("Moving set to start.");
+                        long callStart = System.nanoTime();
+                        if (isAvoiding == null || isAvoiding.isDone()){
+                            if (isAvoiding ==null || isAvoiding.isDone()) avoiding = false;
+                            MOVEMENT_THREAD_POOL.submit(new MovementTask(movementPulseInterval));
+                        } else {
+                            log("AVOIDING NULL STATUS: " + (isAvoiding == null));
+                            log("AVOIDING STATUS: " + isAvoiding.isDone());
+                        }
+                        long callEnd = System.nanoTime();
+                        System.out.println("Time to move: " + (callEnd-callStart));
+                        fps = now;
+                    }
+                }
+            }
+        };
+    }
+
+    @FXML
+    private void avoidOnLeft() {
+        this.avoiding = true;
+        activateScreen();
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(150, java.awt.event.KeyEvent.VK_A));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(500, java.awt.event.KeyEvent.VK_W));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(150, java.awt.event.KeyEvent.VK_D));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(600, java.awt.event.KeyEvent.VK_W));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(150, java.awt.event.KeyEvent.VK_D));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(500, java.awt.event.KeyEvent.VK_W));
+        this.isAvoiding = MOVEMENT_THREAD_POOL.submit( (Callable<? extends Object>) new TurnTask(150, java.awt.event.KeyEvent.VK_A));
+    }
+
+    @FXML
+    private void avoidOnRight() {
+        this.avoiding = true;
+        activateScreen();
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(150, java.awt.event.KeyEvent.VK_D));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(500, java.awt.event.KeyEvent.VK_W));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(150, java.awt.event.KeyEvent.VK_A));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(600, java.awt.event.KeyEvent.VK_W));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(150, java.awt.event.KeyEvent.VK_A));
+        MOVEMENT_THREAD_POOL.submit( (Runnable) new TurnTask(500, java.awt.event.KeyEvent.VK_W));
+        this.isAvoiding = MOVEMENT_THREAD_POOL.submit( (Callable<? extends Object>) new TurnTask(150, java.awt.event.KeyEvent.VK_D));
     }
 
 
@@ -422,5 +606,21 @@ public class MainController implements Initializable {
         this.robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
         this.robot.delay(1000);
         this.robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+        this.screenActive = true;
+    }
+
+    @FXML
+    private void loadModel(){
+        log("Loading model.");
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Open Model Directory");
+        final File selectedDirectory = directoryChooser.showDialog(stage);
+        if (selectedDirectory != null){
+            log("Model loaded from: " + selectedDirectory.getAbsolutePath());
+            model.setSmb(selectedDirectory.getAbsolutePath());
+            captureSingleImage(false);
+            callModel();
+        }
+        captureMenuItem.setDisable(false);
     }
 }

@@ -38,9 +38,15 @@ public class Model {
     private final String OUTPUT_DETECTION_SCORES = "detection_scores";
     private SavedModelBundle smb;
 
+    private Inference inference;
+
 
     public Model(){
-        this.smb = SavedModelBundle.load(SMB_PATH, SMB_SERVE);
+        //this.smb = SavedModelBundle.load(SMB_PATH, SMB_SERVE);
+    }
+
+    public void setSmb(String path) {
+        this.smb = SavedModelBundle.load(path, SMB_SERVE);
     }
 
     public Inference call(String fileName){
@@ -51,7 +57,9 @@ public class Model {
         } else {
             inputPath = PATH + fileName;
         }
-        Inference inference = new Inference();
+        // inference change
+        // Inference inference = new Inference();
+        this.inference = new Inference();
         try (Graph g = new Graph(); Session s = new Session(g)) {
             Ops tf = Ops.create(g);
             Constant<TString> tfFileName = tf.constant(inputPath);
@@ -94,18 +102,22 @@ public class Model {
                     }
 
                     long infStart = System.nanoTime();
-                    inference.setFileName(fileName);
-                    inference.setDetectionScores(detectionScoresArr);
-                    inference.setDetectionClass(detectionClassArr);
-                    inference.setxMin(xMins);
-                    inference.setyMin(yMins);
-                    inference.setxMax(xMaxes);
-                    inference.setyMax(yMaxes);
+                    this.inference.setFileName(fileName);
+                    this.inference.setDetectionScores(detectionScoresArr);
+                    this.inference.setDetectionClass(detectionClassArr);
+                    this.inference.setxMin(xMins);
+                    this.inference.setyMin(yMins);
+                    this.inference.setxMax(xMaxes);
+                    this.inference.setyMax(yMaxes);
                     long inferenceEnd = System.nanoTime();
                     System.out.println("INFERENCE CLASS INITIALIZATION TIME: " + (inferenceEnd - infStart));
                 }
             }
         }
         return inference;
+    }
+
+    public Inference getInference(){
+        return this.inference;
     }
 }
