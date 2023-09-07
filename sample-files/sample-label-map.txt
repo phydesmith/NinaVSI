@@ -1,0 +1,20 @@
+item {
+    id: 1
+    name: 'log'
+}
+item {
+    id: 2
+    name: 'junk'
+}
+item {
+    id: 3
+    name: 'stone'
+}
+item {
+    id: 4
+    name: 'stump'
+}
+item {
+    id: 5
+    name: 'tree'
+}

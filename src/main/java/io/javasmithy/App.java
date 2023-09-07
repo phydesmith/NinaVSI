@@ -21,7 +21,7 @@ public class App extends Application {
     public void start(Stage stage) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("fxml/main-layout.fxml"));
-            stage.setScene(new Scene( (Parent) loader.load(), 1200, 900));
+            stage.setScene(new Scene( (Parent) loader.load(), 1400, 900));
             ((MainController)loader.getController()).setStage(stage);
             ((MainController)loader.getController()).setScene();
             ((MainController)loader.getController()).setKeyEventHandler();

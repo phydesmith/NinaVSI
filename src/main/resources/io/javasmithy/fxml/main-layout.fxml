@@ -15,7 +15,9 @@
 <?import javafx.scene.control.TextField?>
 
 <?import javafx.geometry.Insets?>
-<BorderPane prefHeight="1000.0" prefWidth="1000.0" stylesheets="@../css/style.css"
+<?import javafx.scene.control.CheckMenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<BorderPane prefHeight="1000.0" prefWidth="1400.0" stylesheets="@../css/style.css"
             xmlns="http://javafx.com/javafx/11.0.1"
             xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.javasmithy.controller.MainController"
             fx:id="rootPane" styleClass="BorderPane">
@@ -24,7 +26,11 @@
             <menus>
                 <Menu mnemonicParsing="false" text="File">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Load Model"  onAction="#loadModel" fx:id="loadModelMenuItem"/>
+                        <MenuItem mnemonicParsing="false" text="Load Model" onAction="#loadModel"
+                                  fx:id="loadModelMenuItem"/>
+                    </items>
+                    <items>
+                        <SeparatorMenuItem/>
                     </items>
                     <items>
                         <MenuItem mnemonicParsing="false" text="Exit" onAction="#exit" fx:id="exitMenuItem"/>
@@ -32,10 +38,12 @@
                 </Menu>
                 <Menu mnemonicParsing="false" text="Capture" disable="true" fx:id="captureMenuItem">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Toggle Continuous Capture" onAction="#toggleContinuous" fx:id="toggleConCap"/>
+                        <CheckMenuItem mnemonicParsing="false" text="Toggle Continuous Capture"
+                                       onAction="#toggleContinuous" fx:id="toggleConCap"/>
                     </items>
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Display Capture" onAction="#drawCapture"/>
+                        <CheckMenuItem mnemonicParsing="false" text="Toggle Object Avoidance"
+                                       onAction="#toggleObjectAvoidance"/>
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Help">
@@ -47,38 +55,41 @@
         </MenuBar>
     </top>
     <center>
-        <HBox prefHeight="100.0" prefWidth="200.0" alignment="CENTER_LEFT" spacing="10">
+        <VBox prefHeight="100.0" prefWidth="200.0" alignment="CENTER" spacing="10" >
             <BorderPane.margin>
-                <Insets  bottom="25.0" left="25.0" right="25.0" top="25.0"/>
+                <Insets bottom="25.0" left="25.0" right="25.0" top="25.0"/>
             </BorderPane.margin>
             <children>
                 <Canvas fx:id="canvas" height="640" width="640" styleClass="Canvas"/>
-                <VBox>
-                    <HBox spacing="20">
-                        <Label fx:id="inferenceIntervalLabel" text="Seconds Between Captures: " styleClass="Label" />
+                <HBox alignment="CENTER_RIGHT" spacing="50">
+                    <HBox spacing="5">
+                        <Label fx:id="inferenceIntervalLabel" text="Seconds Between Captures: " styleClass="Label"/>
                         <TextField fx:id="inferenceIntervalTextField" text=".2"/>
-                        <Button fx:id="inferenceIntervalButton" text="set" onAction="#setInferenceInterval"/>
                     </HBox>
-                    <HBox spacing="20">
-                    <Label fx:id="confidencePruneLabel" text="Prune Threshold: "  styleClass="Label"/>
+                    <HBox spacing="5">
+                        <Label fx:id="confidencePruneLabel" text="Prune Threshold: " styleClass="Label"/>
                         <TextField fx:id="confidencePruneTextField" text=".39"/>
-                        <Button fx:id="confidencePruneButton" text="set" onAction="#setConfidencePruneThreshold"/>
                     </HBox>
-                    <HBox spacing="20">
-                        <Label fx:id="movementPulseLabel" text="Pulse Length (ms): "  styleClass="Label"/>
+                    <HBox spacing="5">
+                        <Label fx:id="movementPulseLabel" text="Pulse Length (ms): " styleClass="Label"/>
                         <TextField fx:id="movementPulseTextField" text="300"/>
-                        <Button fx:id="movementPulseButton" text="set" onAction="#setMovementPulse"/>
                     </HBox>
-                    <HBox spacing="20">
-                        <Button fx:id="manualAvoidanceButton" text="Avoid on Left" onAction="#avoidOnLeft"/>
-                    </HBox>
-                </VBox>
+                </HBox>
+                <Button fx:id="parameterSetButton" text="Set Parameters" onAction="#setParameters"/>
             </children>
-        </HBox>
-    </center>
-    <bottom>
-        <VBox spacing="10" fx:id="vBox">
-            <TextArea fx:id="logArea" BorderPane.alignment="center" prefHeight="100" prefWidth="200" editable="false"  />
         </VBox>
+    </center>
+    <right>
+        <VBox spacing="10" fx:id="logVBox" BorderPane.alignment="CENTER" fillWidth="ALWAYS">
+            <BorderPane.margin>
+                <Insets bottom="25.0" left="25.0" right="25.0" top="25.0"/>
+            </BorderPane.margin>
+            <HBox VBox.vgrow="ALWAYS" fillHeight="ALWAYS">
+                <TextArea fx:id="logArea" prefWidth="300" prefHeight="1000" editable="false"/>
+            </HBox>
+        </VBox>
+    </right>
+    <bottom>
+
     </bottom>
 </BorderPane>

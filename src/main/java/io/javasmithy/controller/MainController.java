@@ -81,7 +81,7 @@ public class MainController implements Initializable {
     private Random random;
     private AnimationTimer animationTimer, moveTimer, avoidTimer;
     private boolean capturing, avoiding, modelLoaded;
-    private boolean moving, screenActive = false;
+    private boolean moving, screenActive = false, avoidObjects = false;
 
     private double rightThresholdOverlap, leftThresholdOverlap;
 
@@ -105,7 +105,7 @@ public class MainController implements Initializable {
     @FXML
     TextField inferenceIntervalTextField, confidencePruneTextField, movementPulseTextField;
     @FXML
-    Button inferenceIntervalButton, confidencePruneButton;
+    Button parameterSetButton;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -173,6 +173,13 @@ public class MainController implements Initializable {
         } catch (Exception e){
             log("Invalid data type. Enter in a whole number for movement pulse.");
         }
+    }
+
+    @FXML
+    public void setParameters(){
+        setInferenceInterval();
+        setConfidencePruneThreshold();
+        setMovementPulse();
     }
 
     @FXML
@@ -270,7 +277,7 @@ public class MainController implements Initializable {
                             fps = now;
 
                             //  Detecting and toggling movement if collision detected
-                            if(checkInferencesForCollisions()) {
+                            if(checkInferencesForCollisions() && avoidObjects) {
                                 if(moving){
                                     log("Collision detected while moving, toggling movement to off.");
                                     log("BEFORE STOP: " + moving);
@@ -622,5 +629,11 @@ public class MainController implements Initializable {
             callModel();
         }
         captureMenuItem.setDisable(false);
+    }
+
+    @FXML
+    private void toggleObjectAvoidance(){
+        this.avoidObjects = !this.avoidObjects;
+        log("Toggling object avoidance to " + this.avoidObjects);
     }
 }
