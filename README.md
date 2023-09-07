@@ -2,7 +2,8 @@
 
 ## What's in the name?
 This project is a visual-simulation interface and acts as a bridge between 
-a first-person POV game with WASD input and an object detection model. It 
+a first-person POV game with WASD input and an object detection model. The point is to only
+gather information about the "simulation" via images, with no access to any sort of memory. It 
 is dedicated to my eldest daughter Nina.  
 
 This application was written for use with my Master's Thesis found [here](https://epublications.marquette.edu/theses_open/737/).
