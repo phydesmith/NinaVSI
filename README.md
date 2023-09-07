@@ -11,7 +11,7 @@ As such, classes are currently hardcoded, as well as the triggering of the objec
 
 ## How it works
 This was written to use models exported with the TensorFlow Object Detection API version 2.7.
-The models were trained using transfer learning. The dataset consisted of 6,600 images and 17,000 annotations.
+The models were trained using transfer learning on a novel dataset. It consisted of 6,600 images and 17,000 annotations.
 Some of the annotations were synthetic objects (generated with GAN). Benchmarks can be found in the 
 previously linked paper.
 
