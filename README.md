@@ -1,7 +1,7 @@
 # NinaVSI
 
 ## What's in the name?
- It is a visual-simulation interface and acts as a bridge between a first-person POV game with WASD input and an object detection model. The problem constraint was to only gather 
+ VSI means visual-simulation interface and acts as a bridge between a first-person POV game with WASD input and an object detection model. The problem constraint was to only gather 
  information about the "simulation" via image data, with no access to any sort of in-game memory. It is dedicated to my eldest daughter Nina.
 
 This application was written for use with my Master's Thesis found [here](https://epublications.marquette.edu/theses_open/737/).
