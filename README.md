@@ -1,7 +1,7 @@
 # NinaVSI
 
 ## What's in the name?
- This project is dedicated to my awesome and amazing eldest daughter Nina.
+ This project is dedicated to and named after my awesome and amazing eldest daughter Nina.
 
  VSI means visual-simulation interface and acts as a bridge between a first-person POV game with WASD input and an object detection model. The problem constraint was to only gather 
  information about the "simulation" via image data, with no access to any sort of in-game memory.
@@ -20,6 +20,19 @@ is used to capture screenshots and write it to disk. When continuous capture is 
 captures and the images are sent to the model for inference. All of this is then displayed using 
 JavaFX. Finally, the detections are avoided using key-inputs by the Java AWT Robot API, with the 
 assumption. 
+
+## How to run
+From root project folder:
+-  `./scripts/shade-run.sh`
+- requires maven
+
+## How to use
+- When the program starts, you need to go to file -> load model
+- in the project directory, choose the `sample-files/mobilenet/saved-model` folder, this contains the .pb
+- go to `capture -> toggle continuous capture` and it will start to detect in the viewport, which is a 640x640 square on the system's primary monitor.
+- warning: toggling `object avoidance` may result in keystrokes being sent to the main monitor.
+- Parameters under the viewport dictate how fast screenshots are captured, what confidence threshold you want to prune at, the pulse for sending inferences to the model.  
+- ![image](https://github.com/phydesmith/NinaVSI/assets/31049044/268f1f55-63d4-4e59-8d02-b23cc5b85520)
 
 
  
