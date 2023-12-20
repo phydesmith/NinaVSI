@@ -1,7 +1,7 @@
 # NinaVSI
 
 ## What's in the name?
- This project is dedicated to my eldest daughter Nina
+ This project is dedicated to my awesome and amazing eldest daughter Nina.
 
  VSI means visual-simulation interface and acts as a bridge between a first-person POV game with WASD input and an object detection model. The problem constraint was to only gather 
  information about the "simulation" via image data, with no access to any sort of in-game memory.
