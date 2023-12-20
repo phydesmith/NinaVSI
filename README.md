@@ -26,12 +26,15 @@ From root project folder:
 -  `./scripts/shade-run.sh`
 - requires maven
 
+## warning: toggling `object avoidance` may result in keystrokes being sent to the main monitor. It may be tricky to stop the captures. 
+## Also, this program is GPU intensive and may lag a bit at first. 
+
 ## How to use
 - When the program starts, you need to go to file -> load model
 - in the project directory, choose the `sample-files/mobilenet/saved-model` folder, this contains the .pb
 - go to `capture -> toggle continuous capture` and it will start to detect in the viewport, which is a 640x640 square on the system's primary monitor.
-- warning: toggling `object avoidance` may result in keystrokes being sent to the main monitor.
-- Parameters under the viewport dictate how fast screenshots are captured, what confidence threshold you want to prune at, the pulse for sending inferences to the model.  
+- Parameters under the viewport dictate how fast screenshots are captured, what confidence threshold you want to prune at, the pulse for sending inferences to the model.
+- The environment the model was trained on was 'Nal Hutta' in SWTOR. It probably will not work, or will get spurious detections on anything else. 
 - ![image](https://github.com/phydesmith/NinaVSI/assets/31049044/268f1f55-63d4-4e59-8d02-b23cc5b85520)
 
 
